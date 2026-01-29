@@ -1,71 +1,130 @@
 import streamlit as st
+import pandas as pd
+from datetime import datetime
+
+# --- CONFIGURACIÓN DE LA PÁGINA ---
+st.set_page_config(page_title="Coach Basket Pro", layout="wide", page_icon="🏀")
+
+# --- BASE DE DATOS DE JUGADORES (SIMULADA) ---
+DB_JUGADORES = {
+    "Stephen Curry": {
+        "estilo": "Tirador Élite & Movimiento sin balón",
+        "video": "https://www.youtube.com/watch?v=rK0N9Fj6dHM",  # Ejemplo de tutorial de tiro
+        "rutina": [
+            "1. Calentamiento: 50 tiros libres seguidos.",
+            "2. Dribbling: Bote con pelota de tenis en la otra mano.",
+            "3. Tiros: 5 series de 10 triples desde 5 puntos diferentes.",
+            "4. Condición: Sprints suicidas (línea a línea)."
+        ],
+        "quiz": {"p": "¿Qué es lo más importante en el tiro de Curry?", "r": ["Salto muy alto", "Mecánica rápida y fluida", "Tirar con dos manos"], "correcta": "Mecánica rápida y fluida"}
+    },
+    "LeBron James": {
+        "estilo": "Potencia Física & IQ de Juego",
+        "video": "https://www.youtube.com/watch?v=O9dYqJukgYs", # Ejemplo entrenamiento físico
+        "rutina": [
+            "1. Pesas: Sentadillas y Peso Muerto (Fuerza explosiva).",
+            "2. Cancha: Entradas al aro con contacto (usar almohadillas).",
+            "3. Pases: Práctica de pases a una mano cruzando la cancha.",
+            "4. Core: Planchas y abdominales (15 min)."
+        ],
+        "quiz": {"p": "¿Cuál es la mayor virtud de LeBron?", "r": ["Solo tirar triples", "Su visión de juego y físico", "Driblar como base pequeño"], "correcta": "Su visión de juego y físico"}
+    },
+    "Kyrie Irving": {
+        "estilo": "El mejor manejo de balón (Handles) & Finalización",
+        "video": "https://www.youtube.com/watch?v=OpZDKZJbUfs", # Tutorial de dribbling
+        "rutina": [
+            "1. Miken Drill: Finalizaciones bajo el aro (ambas manos).",
+            "2. Bolsas de plástico: Envuelve el balón para reducir el agarre.",
+            "3. Conos: Zig-zag dribbling a máxima velocidad.",
+            "4. 1vs1: Juega partidos cortos limitados a 3 botes."
+        ],
+        "quiz": {"p": "¿Cómo mantiene Kyrie el balón tan bajo?", "r": ["Flexionando rodillas y dedos abiertos", "Mirando el balón", "Usando guantes"], "correcta": "Flexionando rodillas y dedos abiertos"}
+    }
+}
+
+# --- INICIALIZAR HISTORIAL (SESSION STATE) ---
+if 'historial' not in st.session_state:
+    st.session_state.historial = pd.DataFrame(columns=["Fecha", "Jugador Objetivo", "Enfoque", "Estado"])
 
 def main():
-    st.set_page_config(page_title="Coach de Basket Virtual", page_icon="🏀")
-
-    # Título e introducción
-    st.title("🏀 Tu Entrenador de Basket Personal")
-    st.write("Completa tu perfil para recibir consejos personalizados sobre tu juego y nutrición.")
-
-    st.markdown("---")
-
-    # --- COLUMNA 1: DATOS DEL JUGADOR ---
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.header("1. Tu Perfil")
-        sexo = st.radio("Sexo:", ("Masculino", "Femenino"))
-        nivel = st.selectbox("Nivel de experiencia:", ["Novato", "Intermedio", "Experto"])
-        biotipo = st.selectbox("Biotipo Corporal:", 
-                               ["Ectomorfo (Delgado, cuesta ganar peso)", 
-                                "Mesomorfo (Atlético, gana músculo fácil)", 
-                                "Endomorfo (Estructura ósea grande, gana grasa fácil)"])
-
-    with col2:
-        st.header("2. Medidas")
-        altura = st.number_input("Altura (en cm):", min_value=100, max_value=250, value=180)
-        peso = st.number_input("Peso (en kg):", min_value=30, max_value=200, value=75)
-
-    st.markdown("---")
-
-    # BOTÓN PARA GENERAR REPORTE
-    if st.button("🏀 Generar Plan de Mejora"):
+    st.title("🏀 NBA Player Trainer: Conviértete en Leyenda")
+    
+    # --- BARRA LATERAL ---
+    with st.sidebar:
+        st.header("👤 Tu Perfil")
+        nombre = st.text_input("Tu Nombre", "Rookie")
         
-        # Lógica básica de IMC (Índice de Masa Corporal)
-        altura_m = altura / 100
-        imc = peso / (altura_m ** 2)
+        st.subheader("🎯 Tu Objetivo")
+        jugador_fav = st.selectbox("¿A quién quieres parecerte?", list(DB_JUGADORES.keys()))
         
-        st.success(f"¡Perfil analizado! Tu IMC es de {imc:.2f}")
+        st.write("---")
+        st.info(f"Modo seleccionado: **Estilo {jugador_fav}**")
 
-        # --- CONSEJOS SEGÚN NIVEL ---
-        st.subheader(f"📌 Consejos de Entrenamiento para nivel {nivel}")
-        if nivel == "Novato":
-            st.info("Concéntrate en los fundamentos: Dribbling con ambas manos, mecánica de tiro cerca del aro y pases básicos. No intentes triples lejanos todavía.")
-        elif nivel == "Intermedio":
-            st.info("Es hora de mejorar tu IQ de juego. Trabaja en lecturas de defensa, pick and roll y mejora tu resistencia cardiovascular para partidos completos.")
-        else: # Experto
-            st.info("Perfecciona los detalles. Trabaja en situaciones de juego específicas, velocidad de reacción y liderazgo en la cancha. El gimnasio es obligatorio.")
+    # --- PESTAÑAS PRINCIPALES ---
+    tab1, tab2, tab3 = st.tabs(["🏋️‍♂️ Entrenamiento", "🧠 Quiz de Conocimiento", "mei Historial de Evolución"])
 
-        # --- CONSEJOS DE NUTRICIÓN SEGÚN BIOTIPO ---
-        st.subheader(f"🍎 Nutrición recomendada para {biotipo.split()[0]}")
+    # PESTAÑA 1: ENTRENAMIENTO
+    with tab1:
+        st.header(f"Plan de Entrenamiento: Estilo {jugador_fav}")
+        data = DB_JUGADORES[jugador_fav]
         
-        if "Ectomorfo" in biotipo:
-            st.warning("**Objetivo: Ganar masa muscular.**\n\n"
-                       "- Necesitas un superávit calórico.\n"
-                       "- Come carbohidratos complejos (avena, arroz, pasta) antes de entrenar.\n"
-                       "- No te saltes comidas. La proteína es clave para aguantar el contacto físico en la pintura.")
-        elif "Mesomorfo" in biotipo:
-            st.warning("**Objetivo: Mantener potencia y explosividad.**\n\n"
-                       "- Tienes genética atlética, aprovéchala con dieta balanceada.\n"
-                       "- Proteína moderada y grasas saludables (aguacate, nueces).\n"
-                       "- Hidratación es tu clave para no perder rendimiento.")
-        else: # Endomorfo
-            st.warning("**Objetivo: Control de peso y agilidad.**\n\n"
-                       "- Prioriza proteínas magras (pollo, pescado) y vegetales.\n"
-                       "- Reduce carbohidratos simples y azúcares.\n"
-                       "- Tu ventaja es la fuerza natural, úsala para postear, pero mantén la grasa baja para no perder velocidad.")
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            st.subheader("📹 Video Análisis")
+            st.video(data["video"])
+            st.caption("Mira este video para entender la mecánica.")
 
-        st.caption("Nota: Estos son consejos generales generados por Python. Consulta a un médico para dietas estrictas.")
+        with col2:
+            st.subheader("📋 Tu Rutina de Hoy")
+            st.write(f"Sigue estos pasos para ganar el estilo de {data['estilo']}:")
+            for i, paso in enumerate(data["rutina"]):
+                st.success(paso)
+            
+            st.warning("⚠️ Nota: Ajusta las cargas (peso/repeticiones) según tu nivel actual.")
+
+            # Botón para registrar entrenamiento
+            if st.button("✅ ¡Terminé mi entrenamiento de hoy!"):
+                nueva_fila = {
+                    "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "Jugador Objetivo": jugador_fav,
+                    "Enfoque": data["estilo"],
+                    "Estado": "Completado"
+                }
+                # Convertir el diccionario a DataFrame y concatenarlo
+                nueva_fila_df = pd.DataFrame([nueva_fila])
+                st.session_state.historial = pd.concat([st.session_state.historial, nueva_fila_df], ignore_index=True)
+                st.toast("¡Entrenamiento registrado en tu historial!", icon="🔥")
+
+    # PESTAÑA 2: QUIZ
+    with tab2:
+        st.header(f"¿Qué tanto sabes del juego de {jugador_fav}?")
+        quiz_data = DB_JUGADORES[jugador_fav]["quiz"]
+        
+        respuesta = st.radio(quiz_data["p"], quiz_data["r"])
+        
+        if st.button("Comprobar Respuesta"):
+            if respuesta == quiz_data["correcta"]:
+                st.balloons()
+                st.success("¡Correcto! Entiendes el juego.")
+            else:
+                st.error("Incorrecto. Vuelve a estudiar los videos.")
+
+    # PESTAÑA 3: HISTORIAL
+    with tab3:
+        st.header(f"📊 Evolución de {nombre}")
+        st.write("Aquí queda registrado tu progreso mientras mantengas esta sesión abierta.")
+        
+        if not st.session_state.historial.empty:
+            st.dataframe(st.session_state.historial, use_container_width=True)
+            
+            entrenamientos = len(st.session_state.historial)
+            st.metric("Entrenamientos Totales", entrenamientos)
+            
+            if entrenamientos > 2:
+                st.success("¡Vas por buen camino! La constancia es clave.")
+        else:
+            st.info("Aún no has registrado entrenamientos hoy. Ve a la pestaña 'Entrenamiento' y completa uno.")
 
 if __name__ == "__main__":
     main()
